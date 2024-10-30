@@ -1,5 +1,6 @@
 ---
-title: "Your Title"
+title: "PS4 Spatial"
+author: "Claudia Felipe and Francesca Leon"
 format: 
   pdf:
     keep-tex: true
@@ -17,7 +18,16 @@ include-before-body:
     }
 ---
 
-**PS4:** Due Sat Nov 2 at 5:00PM Central. Worth 100 points. 
+**PS4:** Due Sat Nov 2 at 5:00PM Central. Worth 100 points.
+
+1. This problem set is a paired problem set.
+2. Play paper, scissors, rock to determine who goes first. Call that person Partner 1.
+• Partner 1 (name and cnet ID): Francesca Leon (francescaleon)
+• Partner 2 (name and cnet ID): Claudia Felipe (claudiafelipe)
+3. Partner 1 will accept the ps4 and then share the link it creates with their partner. You can only share it with one partner so you will not be able to change it after your partner has accepted.
+4. “This submission is our work alone and complies with the 30538 integrity policy.” Add your initials to indicate your agreement: **CF** **FL**
+5. “I have uploaded the names of anyone else other than my partner and I worked with on the problem set here” (1 point)
+6. Late coins used this pset: **0** Late coins left after submission: **4**
 
 ## Style Points (10 pts)
 
@@ -25,14 +35,85 @@ include-before-body:
 
 ## Download and explore the Provider of Services (POS) file (10 pts)
 
-1. 
+1. The variables I pulled are: PRVDR_CTGRY_SBTYP_CD, PRVDR_CTGRY_CD, FAC_NAME, PRVDR_NUM, STATE_CD, PGM_TRMNTN_CD, ZIP_CD.
+
+```{python}
+import pandas as pd
+import altair as alt
+import time
+import numpy as np
+import warnings
+import geopandas as gpd
+import os
+
+warnings.filterwarnings('ignore')
+#alt.renderers.enable('png')
+alt.data_transformers.disable_max_rows()
+
+base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
+```
+
+
 2. 
-    a.
-    b.
+
+\
+    a. The number of hospitals reported are 7,245. This number doesn't make full sense because seems to be too high.
+    
+```{python}
+pos2016 = pd.read_csv(os.path.join(base_directory, 'pos2016.csv'))
+pos2016 = pos2016[(pos2016['PRVDR_CTGRY_CD']==1) & (pos2016['PRVDR_CTGRY_SBTYP_CD']==1)]
+pos2016['year'] = 2016
+
+pos2016['PRVDR_NUM'].nunique()
+
+```
+
+\
+    b. Based on the American Hospital Association Statistics, the number of short term hospitals in 2018 (oldest available report) was 4,840. This number differs significantly from the number calculated using the database (7,245). This could happen because the hospitals are mistakenly categorized as short-term in the database. Another explanation could be that some of the short-term hospitals are closed but still appear in the database.
+
+
 3. 
+
+```{python}
+pos2017 = pd.read_csv(os.path.join(base_directory, 'pos2017.csv'))
+pos2017 = pos2017[(pos2017['PRVDR_CTGRY_CD']==1) & (pos2017['PRVDR_CTGRY_SBTYP_CD']==1)]
+pos2017['year'] = 2017
+
+pos2018 = pd.read_csv(os.path.join(base_directory, 'pos2018.csv'), encoding="ISO-8859-1")
+pos2018 = pos2018[(pos2018['PRVDR_CTGRY_CD']==1) & (pos2018['PRVDR_CTGRY_SBTYP_CD']==1)]
+pos2018['year'] = 2018
+
+pos2019 = pd.read_csv(os.path.join(base_directory, 'pos2019.csv'), encoding="ISO-8859-1")
+pos2019 = pos2019[(pos2019['PRVDR_CTGRY_CD']==1) & (pos2019['PRVDR_CTGRY_SBTYP_CD']==1)]
+pos2019['year'] = 2019
+
+pos = pd.concat([pos2016, pos2017, pos2018, pos2019], ignore_index=True)
+
+
+alt.Chart(pos, title = 'Number of Observations per Year').mark_bar().encode(
+  alt.X('year:O').title('Year'),
+  alt.Y('count():Q').title('Number of Observations')
+).properties(width = 500)
+```
+
 4. 
+
+\
     a.
-    b.
+
+```{python}
+alt.Chart(pos, title = 'Number of Unique Hospitals per Year').mark_bar().encode(
+  alt.X('year:O').title('Year'),
+  alt.Y('distinct(PRVDR_NUM):Q').title('Number of Unique Hospitals')
+).properties(width = 500)
+```
+
+\
+    b. The graphs are the same, with the same numbers. This means that the database contains the same number of observations and unique hospitals. This tells that the structure of the data is attached to the unique hospitals, those being the unit of observation.
+
+```{python}
+
+```
 
 ## Identify hospital closures in POS file (15 pts) (*)
 
