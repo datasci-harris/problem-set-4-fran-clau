@@ -1,0 +1,13 @@
+*.csv
+*.shp
+*.shx
+*.dbf
+*.geojson
+*.kml
+*.kmz
+*.gpx
+*.tif
+*.tiff
+*.prj
+*.sld
+*.qpj
