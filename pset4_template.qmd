@@ -50,7 +50,7 @@ warnings.filterwarnings('ignore')
 #alt.renderers.enable('png')
 alt.data_transformers.disable_max_rows()
 
-base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
+base_directory = 'C:/Users/clfel/Documents/GitHub/problem-set-4-fran-clau/'
 ```
 
 
@@ -117,12 +117,115 @@ alt.Chart(pos, title = 'Number of Unique Hospitals per Year').mark_bar().encode(
 
 ## Identify hospital closures in POS file (15 pts) (*)
 
-1. 
+1. The total suspected hospital closures is 174.
+
+```{python}
+# Filter active hospitals in 2016
+active_2016 = pos2016[pos2016['PGM_TRMNTN_CD'] == 0][['PRVDR_NUM', 'FAC_NAME', 'ZIP_CD']]
+
+# Create a list to store the suspected closure year
+closure_data = []
+
+# Iterate over each hospital active in 2016 and check if it remains active in the following years
+for _, row in active_2016.iterrows():
+    provider_id = row['PRVDR_NUM']
+    facility_name = row['FAC_NAME']
+    zip_code = row['ZIP_CD']
+    
+    # Check each successive year
+    if provider_id not in pos2017[pos2017['PGM_TRMNTN_CD'] == 0]['PRVDR_NUM'].values:
+        closure_data.append([facility_name, zip_code, 2017])
+    elif provider_id not in pos2018[pos2018['PGM_TRMNTN_CD'] == 0]['PRVDR_NUM'].values:
+        closure_data.append([facility_name, zip_code, 2018])
+    elif provider_id not in pos2019[pos2019['PGM_TRMNTN_CD'] == 0]['PRVDR_NUM'].values:
+        closure_data.append([facility_name, zip_code, 2019])
+
+# Convert the results into a DataFrame
+closure_df = pd.DataFrame(closure_data, columns=['FAC_NAME', 'ZIP_CD', 'Year of Susp. Closure'])
+
+print("Total suspected hospital closures:", closure_df.shape[0])
+
+```
 2. 
+
+```{python}
+# Sort hospitals by name and select the first 10 rows
+sorted_hospitals = closure_df.sort_values(by='FAC_NAME')[['FAC_NAME', 'Year of Susp. Closure']].head(10)
+
+# Display the results
+sorted_hospitals.style.hide()
+```
 3. 
-    a.
-    b.
-    c.
+
+```{python}
+# Count the total number of active hospitals by ZIP code for each year
+active_by_zip_2016 = pos2016[pos2016['PGM_TRMNTN_CD'] == 0].groupby('ZIP_CD').size().to_dict()
+active_by_zip_2017 = pos2017[pos2017['PGM_TRMNTN_CD'] == 0].groupby('ZIP_CD').size().to_dict()
+active_by_zip_2018 = pos2018[pos2018['PGM_TRMNTN_CD'] == 0].groupby('ZIP_CD').size().to_dict()
+active_by_zip_2019 = pos2019[pos2019['PGM_TRMNTN_CD'] == 0].groupby('ZIP_CD').size().to_dict()
+
+# Create a DataFrame from the dictionaries
+active_counts_df = pd.DataFrame({
+    '2016': pd.Series(active_by_zip_2016),
+    '2017': pd.Series(active_by_zip_2017),
+    '2018': pd.Series(active_by_zip_2018),
+    '2019': pd.Series(active_by_zip_2019)
+})
+
+# Fill any missing values with 0, in case a ZIP code has no active hospitals in a given year
+active_counts_df = active_counts_df.fillna(0).astype(int)
+
+# Create new columns for the difference in active hospital counts between consecutive years
+active_counts_df['2017-2016'] = active_counts_df['2017'] - active_counts_df['2016']
+active_counts_df['2018-2017'] = active_counts_df['2018'] - active_counts_df['2017']
+active_counts_df['2019-2018'] = active_counts_df['2019'] - active_counts_df['2018']
+
+active_counts_df = active_counts_df.reset_index()
+active_counts_df = active_counts_df.rename(columns={'index': 'ZIP_CD'})
+
+# Perform the merge on 'ZIP_CD'
+merged_df = pd.merge(closure_df, active_counts_df, on='ZIP_CD', how='left')
+
+#
+merged_df['change'] = np.where(
+    merged_df['Year of Susp. Closure'] == 2017, merged_df['2017-2016'],
+    np.where(
+        merged_df['Year of Susp. Closure'] == 2018, merged_df['2018-2017'],
+        np.where(
+            merged_df['Year of Susp. Closure'] == 2019, merged_df['2019-2018'],
+            np.nan  
+        )
+    )
+)
+```
+
+ a. The number of hospitals potentially merged/acquired is 8
+
+```{python}
+# Possible mergers or acquisitions: hospitals with "change" <= 0
+merged_or_acquisition = merged_df[(merged_df['change'] >= 0) & (merged_df['change'].notna())]
+n_merged = merged_or_acquisition.shape[0]
+print("Number of hospitals potentially merged/acquired:", n_merged)
+
+```
+
+ b.
+
+```{python}
+# Remaining valid closures with "change" >= 1
+df_corrected = merged_df[(merged_df['change'] < 0) & (merged_df['change'].notna())]
+print("Remaining valid closures after excluding mergers/acquisitions:", df_corrected.shape[0])
+```
+  
+  c. The remaining valid closures after excluding mergers/acquisitions is 166.
+
+```{python}
+# Sort the corrected DataFrame by hospital name and display the first 10 rows
+
+sorted_corrected_closures = df_corrected.sort_values(by='FAC_NAME')[['FAC_NAME', 'ZIP_CD', 'Year of Susp. Closure']].head(10)
+sorted_corrected_closures['ZIP_CD']=sorted_corrected_closures['ZIP_CD'].astype(int)
+sorted_corrected_closures.style.hide()
+```
 
 ## Download Census zip code shapefile (10 pt) 
 
