@@ -11,3 +11,4 @@
 *.prj
 *.sld
 *.qpj
+*.csv*.shp*.shx*.dbf*.geojson*.kml*.kmz*.gpx*.tif*.tiff*.prj*.sld*.qpj**/.DS_Store 
