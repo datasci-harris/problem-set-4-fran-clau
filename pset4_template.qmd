@@ -45,12 +45,14 @@ import numpy as np
 import warnings
 import geopandas as gpd
 import os
+import matplotlib.pyplot as plt
+import yaml
 
 warnings.filterwarnings('ignore')
-#alt.renderers.enable('png')
+alt.renderers.enable('png')
 alt.data_transformers.disable_max_rows()
 
-base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
+base_directory = 'C:/Users/clfel/Documents/GitHub/problem-set-4-fran-clau'
 ```
 
 
@@ -276,17 +278,124 @@ plt.show()
 
 ## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
 
-1. 
-2. 
-3. 
+1. The resulting GeoDataFrame has dimensions (33120, 3), where 33120 is the number of unique zip codes in the dataset and 2 is the number of columns. The 3 columns are:\
+- ZCTA5: This column contains a unique zip code.\
+- centroid: This is a point geometry column that represents the centroid of each zip code area, containing the latitude and longitude.\
+- geometry: Represents an area enclosed by a series of connected lines that form a closed loop.
+
+```{python}
+#Get zipcode centroid and create GeoDataFrame
+all_shp['centroid'] = all_shp.geometry.centroid
+zips_all_centroids = gpd.GeoDataFrame(all_shp[['ZCTA5', 'centroid', 'geometry']], geometry='centroid')
+```
+
+2. The number of unique zipcodes in 'zips_texas_centroids' is 1,910 and in 'zips_texas_borderstates_centroids' is 4,057.
+
+```{python}
+#Filter Texas centroids
+zips_texas_centroids = zips_all_centroids[(zips_all_centroids['ZCTA5'] >= 75000) & (zips_all_centroids['ZCTA5'] <= 79900)]
+
+#Filter Texas and bordering states centroids
+zips_texas_borderstates_centroids = zips_all_centroids[
+    ((zips_all_centroids['ZCTA5'] >= 87000) & (zips_all_centroids['ZCTA5'] <= 88499)) |
+    ((zips_all_centroids['ZCTA5'] >= 73000) & (zips_all_centroids['ZCTA5'] <= 74999)) |
+    ((zips_all_centroids['ZCTA5'] >= 75000) & (zips_all_centroids['ZCTA5'] <= 79999)) |
+    ((zips_all_centroids['ZCTA5'] >= 71600) & (zips_all_centroids['ZCTA5'] <= 72999)) |
+    ((zips_all_centroids['ZCTA5'] >= 70000) & (zips_all_centroids['ZCTA5'] <= 71599))
+]
+
+#Calculate number of unique hospitals
+zips_texas_centroids['ZCTA5'].nunique()
+zips_texas_borderstates_centroids['ZCTA5'].nunique()
+```
+
+
+3. I did a left merge using 'zips_texas_borderstates_centroids' and 'pos2016' based on the variables 'ZCTA5' and 'ZIP_CD' respectively.
+
+```{python}
+#Merge with hospitals database for 2016
+zips_withhospital_centroids = pd.merge(zips_texas_borderstates_centroids, pos2016, left_on=['ZCTA5'], right_on=['ZIP_CD'], how='left')
+
+#Calculate number of hospitals by zipcode
+zips_withhospital_centroids = zips_withhospital_centroids.groupby(['ZCTA5', 'centroid', 'geometry']).count()['PRVDR_NUM'].reset_index().rename(columns={'PRVDR_NUM': 'num_hospitals'})
+
+#Filter zipcodes with at least 1 hospital
+zips_withhospital_centroids = gpd.GeoDataFrame(zips_withhospital_centroids[zips_withhospital_centroids['num_hospitals']>0], geometry='centroid')
+```
+
 4. 
+
+\
     a.
-    b.
-    c.
+
+```{python}
+#Subset 10 zipcodes for Texas
+zips_texas_centroids_10 = zips_texas_centroids.head(10)
+
+#Run join to nearest zipcode with hospitals and calculate time for 10 zipcodes
+st_10 = time.time()
+
+join_nearest_10 = gpd.sjoin_nearest(zips_texas_centroids_10, zips_withhospital_centroids, how='inner', distance_col="distance")
+
+et_10 = time.time()
+print('Execution time:', et_10 - st_10, 'seconds')
+
+#Estimate total time
+print('I calculate the entire processing time to be:', (et_10 - st_10)*191, 'seconds')
+
+```
+
+\
+    b. My estimation was significantly higher than the real excution time for the entire database.
+
+```{python}
+#Run join to nearest zipcode with hospitals and calculate time for entire dataset
+st = time.time()
+
+join_nearest = gpd.sjoin_nearest(zips_texas_centroids, zips_withhospital_centroids, how='inner', distance_col="distance")
+
+et = time.time()
+print('Entire processing time:', et - st, 'seconds')
+```
+
+\
+    c. The .prj file is in degrees (units).
+
+```{python}
+#Convert distance in degrees to miles using 1 degree = 69 miles
+join_nearest['distance'] = join_nearest['distance']*69
+```
+
 5. 
-    a.
-    b.
+
+\
+    a. The distance is in miles (units).
+
+```{python}
+#Calculate mean distance by zipcode
+mean_distance_zip = join_nearest[['ZCTA5_left', 'distance', 'geometry_left']].groupby(['ZCTA5_left', 'geometry_left']).mean().reset_index()
+```
+
+
+\
+    b. An average distance of 8.9 miles from any zip code in Texas to the nearest zip code with at least one hospital seems reasonable given the state's unique geography. Texas is a large state with both densely populated urban centers and vast rural areas, where hospitals are fewer and farther apart.
+
+```{python}
+#Calculate total mean distance
+print('The mean total distance is:', mean_distance_zip['distance'].mean(), 'miles')
+```
+
+\
     c.
+
+```{python}
+#Plot mean distance by zipcode
+mean_distance_zip = gpd.GeoDataFrame(mean_distance_zip, geometry='geometry_left')
+
+mean_distance = mean_distance_zip.plot(column='distance', cmap='Greens', legend=True)
+mean_distance.set_title("Mean Distance (in miles) to Nearest Hospital by ZIP Code", fontsize=15)
+plt.show()
+```
     
 ## Effects of closures on access in Texas (15 pts)
 
