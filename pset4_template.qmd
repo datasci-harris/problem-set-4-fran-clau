@@ -50,7 +50,7 @@ warnings.filterwarnings('ignore')
 #alt.renderers.enable('png')
 alt.data_transformers.disable_max_rows()
 
-base_directory = 'C:/Users/clfel/Documents/GitHub/problem-set-4-fran-clau/'
+base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
 ```
 
 
@@ -230,9 +230,49 @@ sorted_corrected_closures.style.hide()
 ## Download Census zip code shapefile (10 pt) 
 
 1. 
-    a.
-    b. 
+
+\
+    a. The types of files are:\
+    - .shp (shapefile): This file stores the geometric data representing the shape of geographic features.\
+    - .shx (shape index file): This file contains an index of the geometry data in the .shp file, allowing for faster spatial queries and access.\
+    - .dbf (database file): This file stores attribute data in a tabular format, where each row represents a feature, and columns contain the attributes or properties of that feature.\
+    - .prj (projection file): This file contains information about the coordinate system and projection used, allowing the data to be correctly placed on a map.\
+    - .xml (metadata file): This file contains metadata about the shapefile, such as the data source, description, and any relevant metadata standards used.
+
+
+\
+    b. The databases have different sizes:\
+    - .shp (shapefile): 837.5 MB\
+    - .shx (shape index file): 265 KB\
+    - .dbf (database file): 6.4 MB\
+    - .prj (projection file): 165 bytes\
+    - .xml (metadata file): 16 KB\
+
+
+
 2. 
+
+```{python}
+#Load shapefile
+all_shp = gpd.read_file(os.path.join(base_directory, 'gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp'))
+all_shp['ZCTA5'] = all_shp['ZCTA5'].astype(int)
+
+#Filter shapefile to Texas zipcodes
+texas_shp = all_shp[(all_shp['ZCTA5'] >= 75000) & (all_shp['ZCTA5'] <= 79900)]
+
+#Merge shapefile with hospitals database 2016
+hospitals_texas_2016 = pd.merge(texas_shp, pos2016, left_on=['ZCTA5'], right_on=['ZIP_CD'], how='left')
+
+#Calculate number of hospitals per zipcode in 2016
+hospitals_texas_2016 = hospitals_texas_2016.groupby('geometry').count()['PRVDR_NUM'].reset_index()
+
+#Plot choropleth 
+hospitals_texas_2016 = gpd.GeoDataFrame(hospitals_texas_2016, geometry='geometry')
+hosp_texas = hospitals_texas_2016.plot(column='PRVDR_NUM', cmap='YlGnBu', legend=True)
+hosp_texas.set_title("Number of Hospitals by ZIP Code", fontsize=15)
+plt.show()
+```
+
 
 ## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
 
