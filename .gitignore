@@ -11,3 +11,4 @@
 *.prj
 *.sld
 *.qpj
+**/.DS_Store
