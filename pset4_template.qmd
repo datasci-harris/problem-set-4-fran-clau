@@ -52,7 +52,7 @@ warnings.filterwarnings('ignore')
 alt.renderers.enable('png')
 alt.data_transformers.disable_max_rows()
 
-base_directory = 'C:/Users/clfel/Documents/GitHub/problem-set-4-fran-clau'
+base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
 ```
 
 
@@ -112,10 +112,6 @@ alt.Chart(pos, title = 'Number of Unique Hospitals per Year').mark_bar().encode(
 
 \
     b. The graphs are the same, with the same numbers. This means that the database contains the same number of observations and unique hospitals. This tells that the structure of the data is attached to the unique hospitals, those being the unit of observation.
-
-```{python}
-
-```
 
 ## Identify hospital closures in POS file (15 pts) (*)
 
@@ -209,7 +205,7 @@ print("Number of hospitals potentially merged/acquired:", n_merged)
 
 ```
 
- b.The remaining valid closures after excluding mergers/acquisitions is 98.
+ b.The remaining valid closures after excluding mergers/acquisitions is 94.
 
 ```{python}
 # Remaining valid closures 
@@ -279,7 +275,7 @@ plt.show()
 
 ## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
 
-1. The resulting GeoDataFrame has dimensions (33120, 3), where 33120 is the number of unique zip codes in the dataset and 2 is the number of columns. The 3 columns are:\
+1. The resulting GeoDataFrame has dimensions (33120, 3), where 33120 is the number of unique zip codes in the dataset and 3 is the number of columns. The 3 columns are:\
 - ZCTA5: This column contains a unique zip code.\
 - centroid: This is a point geometry column that represents the centroid of each zip code area, containing the latitude and longitude.\
 - geometry: Represents an area enclosed by a series of connected lines that form a closed loop.
@@ -419,7 +415,7 @@ summary_table.columns = ['Number of Closures', 'Number of ZIP Codes']
 summary_table.style.hide()
 ```
 
-2. There are 32 directly affected zipcodes in Texas.
+2. There are 17 directly affected zipcodes in Texas with one hospital closed.
 
 ```{python}
 
@@ -434,7 +430,7 @@ closures_texas_plt.set_title("Number of Closures by ZIP Code", fontsize=15)
 plt.show()
 ```
 
-3. There are 532 indirectly affected zipcodes in TX
+3. There are 532 indirectly affected zipcodes in TX.
 
 ```{python}
 #Filter directly affected zipcodes in TX
