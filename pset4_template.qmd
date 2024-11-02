@@ -52,7 +52,7 @@ warnings.filterwarnings('ignore')
 alt.renderers.enable('png')
 alt.data_transformers.disable_max_rows()
 
-base_directory = 'C:/Users/clfel/Documents/GitHub/problem-set-4-fran-clau'
+base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
 ```
 
 
@@ -225,7 +225,8 @@ print("Remaining valid closures after excluding mergers/acquisitions:", df_corre
 # Sort the corrected DataFrame by hospital name and display the first 10 rows
 
 sorted_corrected_closures = df_corrected.sort_values(by='FAC_NAME')[['FAC_NAME', 'ZIP_CD', 'Year of Susp. Closure']].head(10)
-sorted_corrected_closures['ZIP_CD']=sorted_corrected_closures['ZIP_CD'].astype(int)
+sorted_corrected_closures['ZIP_CD']=sorted_corrected_closures['ZIP_CD']\
+    .astype(int)
 sorted_corrected_closures.style.hide()
 ```
 
@@ -266,11 +267,13 @@ texas_shp = all_shp[(all_shp['ZCTA5'] >= 75000) & (all_shp['ZCTA5'] <= 79900)]
 hospitals_texas_2016 = pd.merge(texas_shp, pos2016, left_on=['ZCTA5'], right_on=['ZIP_CD'], how='left')
 
 #Calculate number of hospitals per zipcode in 2016
-hospitals_texas_2016 = hospitals_texas_2016.groupby('geometry').count()['PRVDR_NUM'].reset_index()
+hospitals_texas_2016 = hospitals_texas_2016.groupby('geometry')\
+    .count()['PRVDR_NUM'].reset_index()
 
 #Plot choropleth 
 hospitals_texas_2016 = gpd.GeoDataFrame(hospitals_texas_2016, geometry='geometry')
 hosp_texas = hospitals_texas_2016.plot(column='PRVDR_NUM', cmap='YlGnBu', legend=True)
+plt.gcf().set_size_inches(8, 8)
 hosp_texas.set_title("Number of Hospitals by ZIP Code", fontsize=15)
 plt.show()
 ```
@@ -289,7 +292,7 @@ all_shp['centroid'] = all_shp.geometry.centroid
 zips_all_centroids = gpd.GeoDataFrame(all_shp[['ZCTA5', 'centroid', 'geometry']], geometry='centroid')
 ```
 
-2. The number of unique zipcodes in 'zips_texas_centroids' is 1,910 and in 'zips_texas_borderstates_centroids' is 4,057.
+2. The number of unique zipcodes in 'zips_texas_centroids' is 1,910 and in\ 'zips_texas_borderstates_centroids' is 4,057.
 
 ```{python}
 #Filter Texas centroids
@@ -320,7 +323,8 @@ zips_withhospital_centroids = pd.merge(zips_texas_borderstates_centroids, pos201
 zips_withhospital_centroids = zips_withhospital_centroids.groupby(['ZCTA5', 'centroid', 'geometry']).count()['PRVDR_NUM'].reset_index().rename(columns={'PRVDR_NUM': 'num_hospitals'})
 
 #Filter zipcodes with at least 1 hospital
-zips_withhospital_centroids = gpd.GeoDataFrame(zips_withhospital_centroids[zips_withhospital_centroids['num_hospitals']>0], geometry='centroid')
+zips_withhospital_centroids = gpd.GeoDataFrame(zips_withhospital_centroids\
+    [zips_withhospital_centroids['num_hospitals']>0], geometry='centroid')
 ```
 
 4. 
@@ -393,6 +397,7 @@ print('The mean total distance is:', mean_distance_zip['distance'].mean(), 'mile
 mean_distance_zip = gpd.GeoDataFrame(mean_distance_zip, geometry='geometry_left')
 
 mean_distance = mean_distance_zip.plot(column='distance', cmap='Greens', legend=True)
+plt.gcf().set_size_inches(8, 8)
 mean_distance.set_title("Mean Distance (in miles) to Nearest Hospital by ZIP Code", fontsize=15)
 plt.show()
 ```
@@ -400,8 +405,82 @@ plt.show()
 ## Effects of closures on access in Texas (15 pts)
 
 1. 
-2. 
-3. 
+
+```{python}
+df_corrected = df_corrected[['FAC_NAME', 'ZIP_CD', 'Year of Susp. Closure']]
+
+# Filter for Texas
+texas_closures = df_corrected[(df_corrected['ZIP_CD'] >= 75000) & (df_corrected['ZIP_CD'] <= 79900)]
+
+# Count closures by ZIP code
+texas_closures_zip = texas_closures.groupby('ZIP_CD').size().reset_index(name='closures')
+
+# Summary table of the number of zipcodes vs. the number of closures they experienced
+summary_table = texas_closures_zip['closures'].value_counts().reset_index()
+summary_table.columns = ['Number of Closures', 'Number of ZIP Codes']
+summary_table.style.hide()
+```
+
+2. There are 32 directly affected zipcodes in Texas.
+
+```{python}
+
+#Merge shapefile with hospitals database 2016
+closures_texas = pd.merge(texas_shp, texas_closures_zip, left_on=['ZCTA5'], right_on=['ZIP_CD'], how='left')
+closures_texas['closures'] = closures_texas['closures'].fillna(0)
+
+#Create choropleth with closures by zipcode
+closures_texas_plt = closures_texas.plot(column='closures', cmap='Reds', legend=True, edgecolor='gray', vmax=1)
+plt.gcf().set_size_inches(8, 8)
+closures_texas_plt.set_title("Number of Closures by ZIP Code", fontsize=15)
+plt.show()
+```
+
+3. There are 532 indirectly affected zipcodes in TX
+
+```{python}
+#Filter directly affected zipcodes in TX
+directly_affected_tx = closures_texas[closures_texas['closures']>0][['geometry', 'ZIP_CD']]
+
+#Create 10-mile buffer
+directly_affected_tx['buffer'] = directly_affected_tx.geometry.buffer(10/69)
+
+#Get indirectly affected zipcodes in TX
+indirectly_affected_tx = gpd.sjoin(
+    texas_shp, directly_affected_tx.set_geometry('buffer'), how='inner', predicate='intersects')
+
+#Remove directly affected zipcodes
+indirectly_affected_tx = indirectly_affected_tx[~indirectly_affected_tx['ZCTA5'].\
+    isin(directly_affected_tx['ZIP_CD'])]
+
+#Find number of indirectly affected zip codes in TX
+indirectly_affected_tx['ZCTA5'].nunique()
+```
+
 4. 
 
+```{python}
+#Create categories
+texas_shp['category'] = 'Not Affected'
+texas_shp.loc[texas_shp['ZCTA5'].isin(directly_affected_tx['ZIP_CD']), 'category'] = 'Directly Affected'
+texas_shp.loc[texas_shp['ZCTA5'].isin(indirectly_affected_tx['ZCTA5']), 'category'] = 'Indirectly Affected'
+
+#Choropleth with categories
+fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+texas_shp.plot(column='category', cmap='coolwarm', legend=True, ax=ax, 
+               legend_kwds={'title': 'Impact Category'})
+ax.set_title("Impact of Hospital Closures on Texas ZIP Codes (2016-2019)", fontsize=15)
+plt.show()
+```
+
 ## Reflecting on the exercise (10 pts) 
+
+1. The "first-pass" method for identifying hospital closures in the data has several limitations that could lead to inaccurate interpretations. One major issue is that this method might mistake cases where hospitals have been absorbed into larger networks for example. In such situations, the hospital may still be serving the community, but the method categorizes it incorrectly as a permanent closure, thus distorting the analysis of actual healthcare access impacts.\
+\
+On the other hand, the opposite could also occur: if a new hospital opens in the same zip code the year following a closure, this method might mistakenly interpret it as a “reopening” of the original hospital, when it is actually a new facility. This could underestimate the number of true closures and overestimate healthcare access continuity in certain areas.\
+\
+To improve the accuracy of this analysis, I would suggest:\
+- Tracking location and name history: Checking for new facilities with similar names or close locations in subsequent years would help identify replacements rather than permanent closures.
+- Monitoring certification number changes: Since some hospitals change CMS certification numbers after mergers or acquisitions, tracking these changes alongside names and locations would help confirm whether the hospital continues to operate under new management.
+- Incorporating external data sources: Adding information from sources like the American Hospital Association or local health databases could verify whether a hospital is still operating, even under a different name or management, or if it has truly closed.
+- Analyzing opening and closing dates: Carefully examining each hospital’s dates and other details, would help differentiate between new facilities and reopenings.
