@@ -52,7 +52,7 @@ warnings.filterwarnings('ignore')
 alt.renderers.enable('png')
 alt.data_transformers.disable_max_rows()
 
-base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/'
+base_directory = 'C:/Users/clfel/Documents/GitHub/problem-set-4-fran-clau'
 ```
 
 
@@ -190,22 +190,20 @@ merged_df = pd.merge(closure_df, active_counts_df, on='ZIP_CD', how='left')
 
 #
 merged_df['change'] = np.where(
-    merged_df['Year of Susp. Closure'] == 2017, merged_df['2017-2016'],
-    np.where(
-        merged_df['Year of Susp. Closure'] == 2018, merged_df['2018-2017'],
+        merged_df['Year of Susp. Closure'] == 2017, merged_df['2018-2017'],
         np.where(
-            merged_df['Year of Susp. Closure'] == 2019, merged_df['2019-2018'],
+            merged_df['Year of Susp. Closure'] == 2018, merged_df['2019-2018'],
             np.nan  
         )
     )
-)
+
 ```
 
  a. The number of hospitals potentially merged/acquired is 8
 
 ```{python}
-# Possible mergers or acquisitions: hospitals with "change" <= 0
-merged_or_acquisition = merged_df[(merged_df['change'] >= 0) & (merged_df['change'].notna())]
+# Possible mergers or acquisitions
+merged_or_acquisition = merged_df[(merged_df['change'] > 0) & (merged_df['change'].notna())]
 n_merged = merged_or_acquisition.shape[0]
 print("Number of hospitals potentially merged/acquired:", n_merged)
 
@@ -214,8 +212,8 @@ print("Number of hospitals potentially merged/acquired:", n_merged)
  b.
 
 ```{python}
-# Remaining valid closures with "change" >= 1
-df_corrected = merged_df[(merged_df['change'] < 0) & (merged_df['change'].notna())]
+# Remaining valid closures 
+df_corrected = merged_df[(merged_df['change'] <= 0) & (merged_df['change'].notna())]
 print("Remaining valid closures after excluding mergers/acquisitions:", df_corrected.shape[0])
 ```
   
@@ -484,3 +482,14 @@ To improve the accuracy of this analysis, I would suggest:\
 - Monitoring certification number changes: Since some hospitals change CMS certification numbers after mergers or acquisitions, tracking these changes alongside names and locations would help confirm whether the hospital continues to operate under new management.
 - Incorporating external data sources: Adding information from sources like the American Hospital Association or local health databases could verify whether a hospital is still operating, even under a different name or management, or if it has truly closed.
 - Analyzing opening and closing dates: Carefully examining each hospital’s dates and other details, would help differentiate between new facilities and reopenings.
+
+2. We consider that the way we are identifying zip codes affected by closures has some limitations, as it doesn’t necessarily capture all factors influencing access to hospitals in those areas.
+\
+While identifying zip codes directly affected by a closure and those within a 10-mile radius is helpful, this approach overlooks other key variables such as the capacity of remaining hospitals to absorb additional demand, the availability of transportation in rural or urban areas, and road infrastructure. These limitations make the analysis less accurate in assessing the true impact on access to healthcare services.
+\
+To improve this measure, we would suggest:
+\
+- Evaluating changes in average distance: Calculating the average distance from each zip code to the nearest hospital before and after closures, which would better reflect how geographical access has changed.
+- Considering capacity and service types: Reviewing whether hospitals in nearby zip codes can handle the additional demand and if they offer services comparable to those of the closed hospital.
+- Incorporating transportation data: Considering public transportation availability and road accessibility to better reflect real access in affected areas.
+- These adjustments would provide a more comprehensive and accurate analysis of the impact of closures on zip code-level access to hospitals.
