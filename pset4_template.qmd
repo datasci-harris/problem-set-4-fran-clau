@@ -98,6 +98,7 @@ alt.Chart(pos, title = 'Number of Observations per Year').mark_bar().encode(
 ).properties(width = 500)
 ```
 
+
 4. 
 
 \
@@ -144,6 +145,7 @@ closure_df = pd.DataFrame(closure_data, columns=['FAC_NAME', 'ZIP_CD', 'Year of 
 print("Total suspected hospital closures:", closure_df.shape[0])
 
 ```
+
 2. 
 
 ```{python}
@@ -153,6 +155,7 @@ sorted_hospitals = closure_df.sort_values(by='FAC_NAME')[['FAC_NAME', 'Year of S
 # Display the results
 sorted_hospitals.style.hide()
 ```
+
 3. 
 
 ```{python}
@@ -195,6 +198,7 @@ merged_df['change'] = np.where(
 
 ```
 
+\
  a. The number of hospitals potentially merged/acquired is 4
 
 ```{python}
@@ -430,7 +434,7 @@ closures_texas_plt.set_title("Number of Closures by ZIP Code", fontsize=15)
 plt.show()
 ```
 
-3. There are 532 indirectly affected zipcodes in TX.
+3. There are 359 indirectly affected zipcodes in TX.
 
 ```{python}
 #Filter directly affected zipcodes in TX
@@ -488,4 +492,3 @@ To improve this measure, we would suggest:
 - Evaluating changes in average distance: Calculating the average distance from each zip code to the nearest hospital before and after closures, which would better reflect how geographical access has changed.
 - Considering capacity and service types: Reviewing whether hospitals in nearby zip codes can handle the additional demand and if they offer services comparable to those of the closed hospital.
 - Incorporating transportation data: Considering public transportation availability and road accessibility to better reflect real access in affected areas.
-- These adjustments would provide a more comprehensive and accurate analysis of the impact of closures on zip code-level access to hospitals.
