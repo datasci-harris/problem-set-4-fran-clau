@@ -199,7 +199,7 @@ merged_df['change'] = np.where(
 
 ```
 
- a. The number of hospitals potentially merged/acquired is 8
+ a. The number of hospitals potentially merged/acquired is 4
 
 ```{python}
 # Possible mergers or acquisitions
@@ -209,7 +209,7 @@ print("Number of hospitals potentially merged/acquired:", n_merged)
 
 ```
 
- b.
+ b.The remaining valid closures after excluding mergers/acquisitions is 98.
 
 ```{python}
 # Remaining valid closures 
@@ -217,7 +217,7 @@ df_corrected = merged_df[(merged_df['change'] <= 0) & (merged_df['change'].notna
 print("Remaining valid closures after excluding mergers/acquisitions:", df_corrected.shape[0])
 ```
   
-  c. The remaining valid closures after excluding mergers/acquisitions is 166.
+  c. 
 
 ```{python}
 # Sort the corrected DataFrame by hospital name and display the first 10 rows
